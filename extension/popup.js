@@ -43,7 +43,7 @@ async function saveConfig(supabaseUrl, supabaseAnonKey, appUrl) {
   return storageSyncSet({
     supabaseUrl: supabaseUrl.replace(/\/$/, ''),
     supabaseAnonKey,
-    appUrl: (appUrl || 'http://localhost:3000').replace(/\/$/, ''),
+    appUrl: (appUrl || 'https://the-grinder.vercel.app').replace(/\/$/, ''),
   })
 }
 
@@ -275,7 +275,7 @@ async function runCapture(config) {
     const { url, pageText } = await extractPageData()
 
     setLoading('Extracting job details...')
-    const jobData = await captureJobFromPage(config.appUrl || 'http://localhost:3000', token, url, pageText)
+    const jobData = await captureJobFromPage(config.appUrl || 'https://the-grinder.vercel.app', token, url, pageText)
 
     populateForm(jobData, url)
   } catch (err) {
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Open app
   document.querySelector('#open-app-btn').addEventListener('click', async () => {
     const config = await loadConfig()
-    chrome.tabs.create({ url: config.appUrl || 'http://localhost:3000' })
+    chrome.tabs.create({ url: config.appUrl || 'https://the-grinder.vercel.app' })
   })
 
   // Sign out
