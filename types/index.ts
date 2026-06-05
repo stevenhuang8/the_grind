@@ -52,6 +52,16 @@ export const STAGE_XP: Record<Stage, number> = {
   ghosted: 0,
 }
 
+export interface JobDocument {
+  id: string
+  application_id: string
+  user_id: string
+  file_name: string
+  storage_path: string
+  file_size?: number
+  created_at: string
+}
+
 export interface Level {
   level: number
   title: string

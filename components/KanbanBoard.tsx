@@ -6,6 +6,9 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core'
 import { Stage, Application } from '@/types'
 import { useApplications } from '@/hooks/useApplications'
@@ -16,6 +19,7 @@ import StatsPanel from './StatsPanel'
 import KanbanColumn from './KanbanColumn'
 import ApplicationCard from './ApplicationCard'
 import AddApplicationModal, { ApplicationFormData } from './AddApplicationModal'
+import ApplicationDetailModal from './ApplicationDetailModal'
 import AIReactionToast from './AIReactionToast'
 
 const STAGE_ORDER: Stage[] = [
@@ -53,7 +57,12 @@ export default function KanbanBoard() {
     useApplications()
   const stats = useXP(applications)
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  )
+
   const [activeApp, setActiveApp] = useState<Application | null>(null)
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -138,7 +147,7 @@ export default function KanbanBoard() {
       <XPBar stats={stats} />
       <StatsPanel stats={stats} />
 
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
           <div className="flex gap-4 min-w-max h-full pb-4">
             {STAGE_ORDER.map(stage => (
@@ -147,6 +156,7 @@ export default function KanbanBoard() {
                 stage={stage}
                 applications={appsByStage[stage]}
                 onDelete={deleteApplication}
+                onSelect={setSelectedApp}
               />
             ))}
           </div>
@@ -163,6 +173,10 @@ export default function KanbanBoard() {
 
       {modalOpen && (
         <AddApplicationModal onAdd={handleAdd} onClose={() => setModalOpen(false)} />
+      )}
+
+      {selectedApp && (
+        <ApplicationDetailModal application={selectedApp} onClose={() => setSelectedApp(null)} />
       )}
 
       {toast && (

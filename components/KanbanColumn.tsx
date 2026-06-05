@@ -18,9 +18,10 @@ interface Props {
   stage: Stage
   applications: Application[]
   onDelete: (id: string) => void
+  onSelect: (application: Application) => void
 }
 
-export default function KanbanColumn({ stage, applications, onDelete }: Props) {
+export default function KanbanColumn({ stage, applications, onDelete, onSelect }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
 
   return (
@@ -47,7 +48,7 @@ export default function KanbanColumn({ stage, applications, onDelete }: Props) {
         ].join(' ')}
       >
         {applications.map(app => (
-          <ApplicationCard key={app.id} application={app} onDelete={onDelete} />
+          <ApplicationCard key={app.id} application={app} onDelete={onDelete} onSelect={onSelect} />
         ))}
         {applications.length === 0 && (
           <div className="flex items-center justify-center flex-1 min-h-20 text-xs text-muted/40">

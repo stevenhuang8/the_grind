@@ -7,6 +7,7 @@ import { daysAgo } from '@/lib/utils'
 interface Props {
   application: Application
   onDelete: (id: string) => void
+  onSelect?: (application: Application) => void
 }
 
 function safeHostname(url: string): string | null {
@@ -17,7 +18,7 @@ function safeHostname(url: string): string | null {
   }
 }
 
-export default function ApplicationCard({ application, onDelete }: Props) {
+export default function ApplicationCard({ application, onDelete, onSelect }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: application.id,
     data: { application },
@@ -37,6 +38,7 @@ export default function ApplicationCard({ application, onDelete }: Props) {
       style={style}
       {...attributes}
       {...listeners}
+      onClick={() => onSelect?.(application)}
       className={[
         'bg-card border border-grind-border rounded-lg p-3 cursor-grab active:cursor-grabbing select-none transition-all',
         isDragging ? 'opacity-40' : 'hover:border-[#3a3a3a]',
@@ -49,7 +51,7 @@ export default function ApplicationCard({ application, onDelete }: Props) {
         </div>
         <button
           onPointerDown={e => e.stopPropagation()}
-          onClick={() => onDelete(application.id)}
+          onClick={e => { e.stopPropagation(); onDelete(application.id) }}
           className="text-muted hover:text-red-400 text-xs shrink-0 mt-0.5 transition-colors"
           aria-label="Delete"
         >
@@ -72,6 +74,7 @@ export default function ApplicationCard({ application, onDelete }: Props) {
           target="_blank"
           rel="noopener noreferrer"
           onPointerDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
           className="text-xs text-muted hover:text-gold block mt-1.5 truncate transition-colors"
         >
           ↗ {hostname}
