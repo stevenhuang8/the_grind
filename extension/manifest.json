@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "The Grind",
+  "version": "1.1.0",
+  "description": "Capture job applications in one click.",
+  "permissions": ["activeTab", "storage", "scripting", "sidePanel"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "The Grind"
+  },
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

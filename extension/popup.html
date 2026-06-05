@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Grind</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 420px;
+      background: #0a0a0a;
+      color: #e2e0d8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+    }
+
+    .header {
+      padding: 11px 16px;
+      border-bottom: 1px solid #252525;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #c9a84c;
+    }
+
+    .header-actions { display: flex; gap: 12px; }
+    .header-actions a {
+      font-size: 11px;
+      color: #55544e;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .header-actions a:hover { color: #e2e0d8; }
+
+    .view { padding: 16px; display: none; }
+
+    .view-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #55544e;
+      margin-bottom: 14px;
+    }
+
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #55544e;
+      margin-bottom: 5px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 8px 10px;
+      background: #111111;
+      border: 1px solid #252525;
+      border-radius: 4px;
+      color: #e2e0d8;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus { border-color: #c9a84c; }
+
+    .field input::placeholder,
+    .field textarea::placeholder { color: #3a3a3a; }
+
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2355544e'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+
+    .field select option { background: #111111; }
+    .field textarea { resize: none; line-height: 1.45; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 9px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+      font-family: inherit;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: #c9a84c; color: #000; width: 100%; }
+    .btn-primary:hover:not(:disabled) { background: #b8973e; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid #252525;
+      color: #55544e;
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: #55544e; color: #e2e0d8; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn-row .btn-ghost { flex: 0 0 auto; }
+    .btn-row .btn-primary { flex: 1; }
+
+    .error-msg {
+      display: none;
+      color: #cf6679;
+      font-size: 11px;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Loading */
+    #loading-view {
+      text-align: center;
+      padding: 36px 16px;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #252525;
+      border-top-color: #c9a84c;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text { color: #55544e; font-size: 12px; }
+
+    /* Success */
+    #success-view {
+      text-align: center;
+      padding: 28px 16px 20px;
+    }
+    .xp-badge {
+      display: block;
+      font-size: 30px;
+      font-weight: 700;
+      color: #c9a84c;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    .success-sub {
+      color: #55544e;
+      font-size: 12px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>The Grind</h1>
+  <div class="header-actions">
+    <a id="edit-config-link" style="display:none">Settings</a>
+    <a id="sign-out-link" style="display:none">Sign out</a>
+  </div>
+</div>
+
+<!-- Setup view (first run) -->
+<div id="setup-view" class="view">
+  <div class="view-title">Connect your Grind account</div>
+  <form id="setup-form">
+    <div class="field">
+      <label>Supabase Project URL</label>
+      <input id="setup-supabase-url" type="url" placeholder="https://xxxx.supabase.co" required />
+    </div>
+    <div class="field">
+      <label>Supabase Anon Key</label>
+      <input id="setup-anon-key" type="text" placeholder="eyJ..." required />
+    </div>
+    <div class="field">
+      <label>App URL (optional)</label>
+      <input id="setup-app-url" type="url" placeholder="http://localhost:3000" />
+    </div>
+    <div class="error-msg"></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button type="submit" class="btn btn-primary">Save &amp; Continue</button>
+    </div>
+  </form>
+</div>
+
+<!-- Auth view -->
+<div id="auth-view" class="view">
+  <div class="view-title">Sign in</div>
+  <form id="auth-form">
+    <div class="field">
+      <label>Email</label>
+      <input id="auth-email" type="email" placeholder="you@example.com" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="auth-password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+    </div>
+    <div class="error-msg"></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button id="auth-submit" type="submit" class="btn btn-primary">Enter the Grind</button>
+    </div>
+  </form>
+</div>
+
+<!-- Loading view -->
+<div id="loading-view" class="view">
+  <div class="spinner"></div>
+  <div id="loading-text">Reading page...</div>
+</div>
+
+<!-- Form view (confirm/edit extracted data) -->
+<div id="form-view" class="view">
+  <div class="view-title">Confirm application</div>
+  <form id="job-form">
+    <div class="field-row">
+      <div class="field">
+        <label>Company *</label>
+        <input id="field-company" type="text" placeholder="Acme Corp" required />
+      </div>
+      <div class="field">
+        <label>Role *</label>
+        <input id="field-role" type="text" placeholder="Software Engineer" required />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Stage</label>
+        <select id="field-stage">
+          <option value="applied">Applied</option>
+          <option value="in_review">In Review</option>
+          <option value="interview">Interview</option>
+          <option value="final_round">Final Round</option>
+          <option value="offer">Offer</option>
+          <option value="rejected">Rejected</option>
+          <option value="ghosted">Ghosted</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Date Applied</label>
+        <input id="field-date" type="date" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Job URL</label>
+      <input id="field-url" type="text" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="field-notes" rows="2" placeholder="Key requirements, referral context..."></textarea>
+    </div>
+    <div class="error-msg"></div>
+    <div class="btn-row">
+      <button id="form-rescan" type="button" class="btn btn-ghost">↺ Rescan</button>
+      <button id="form-submit" type="submit" class="btn btn-primary">Add to Grind</button>
+    </div>
+  </form>
+</div>
+
+<!-- Success view -->
+<div id="success-view" class="view">
+  <span id="xp-amount" class="xp-badge">+50 XP</span>
+  <div class="success-sub">Application saved.<br>Keep grinding.</div>
+  <div class="btn-row">
+    <button id="capture-another-btn" class="btn btn-ghost">Capture Another</button>
+    <button id="open-app-btn" class="btn btn-primary">Open Board</button>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
