@@ -226,7 +226,7 @@ function showView(id) {
   const editConfigEl = document.querySelector('#edit-config-link')
   const activeInSession = id === '#form-view' || id === '#loading-view' || id === '#success-view'
   signOutEl.style.display = activeInSession ? 'inline' : 'none'
-  editConfigEl.style.display = id === '#auth-view' ? 'inline' : 'none'
+  editConfigEl.style.display = activeInSession || id === '#auth-view' ? 'inline' : 'none'
 }
 
 function setLoading(text) {
@@ -255,6 +255,9 @@ function populateForm(jobData, url) {
   document.querySelector('#field-url').value = url || ''
   document.querySelector('#field-date').value = today
   document.querySelector('#field-stage').value = 'applied'
+  const submitBtn = document.querySelector('#form-submit')
+  submitBtn.disabled = false
+  submitBtn.textContent = 'Add to Grind'
   hideError('#form-view')
   showView('#form-view')
 }
