@@ -148,7 +148,7 @@ export default function KanbanBoard() {
       <StatsPanel stats={stats} />
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
           <div className="flex gap-4 min-w-max h-full pb-4">
             {STAGE_ORDER.map(stage => (
               <KanbanColumn

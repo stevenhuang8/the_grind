@@ -25,9 +25,9 @@ export default function KanbanColumn({ stage, applications, onDelete, onSelect }
   const { setNodeRef, isOver } = useDroppable({ id: stage })
 
   return (
-    <div className="flex flex-col w-60 shrink-0">
+    <div className="flex flex-col w-60 shrink-0 h-full">
       <div
-        className="px-3 py-2 mb-2 border-t-2"
+        className="px-3 py-2 mb-2 border-t-2 shrink-0"
         style={{ borderColor: STAGE_COLORS[stage] }}
       >
         <div className="flex items-center justify-between">
@@ -41,7 +41,7 @@ export default function KanbanColumn({ stage, applications, onDelete, onSelect }
       <div
         ref={setNodeRef}
         className={[
-          'flex-1 min-h-40 rounded p-2 flex flex-col gap-2 transition-colors',
+          'flex-1 min-h-0 overflow-y-auto rounded p-2 flex flex-col gap-2 transition-colors',
           isOver
             ? 'bg-surface border border-dashed border-gold/30'
             : 'bg-surface/20',
