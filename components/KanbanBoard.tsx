@@ -53,7 +53,7 @@ async function fetchAIReaction(
 }
 
 export default function KanbanBoard() {
-  const { applications, loading, addApplication, updateStage, deleteApplication } =
+  const { applications, loading, addApplication, updateStageBulk, deleteApplication } =
     useApplications()
   const stats = useXP(applications)
 
@@ -62,13 +62,45 @@ export default function KanbanBoard() {
   )
 
   const [activeApp, setActiveApp] = useState<Application | null>(null)
+  const [dragCount, setDragCount] = useState(1)
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set())
+  }
+
+  async function handleDelete(id: string) {
+    await deleteApplication(id)
+    setSelectedIds(prev => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
 
   function handleDragStart(event: DragStartEvent) {
     const app = applications.find(a => a.id === event.active.id)
     setActiveApp(app ?? null)
+    if (!app) return
+    if (selectedIds.has(app.id)) {
+      setDragCount(selectedIds.size)
+    } else {
+      setSelectedIds(new Set([app.id]))
+      setDragCount(1)
+    }
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -78,9 +110,21 @@ export default function KanbanBoard() {
 
     const app = applications.find(a => a.id === active.id)
     const newStage = over.id as Stage
-    if (!app || app.stage === newStage) return
+    if (!app) return
 
-    await updateStage(app.id, newStage)
+    const idsToMove = selectedIds.has(app.id) && selectedIds.size > 1
+      ? Array.from(selectedIds)
+      : [app.id]
+
+    const appsToMove = idsToMove
+      .map(id => applications.find(a => a.id === id))
+      .filter((a): a is Application => !!a && a.stage !== newStage)
+
+    if (appsToMove.length === 0) return
+
+    await updateStageBulk(appsToMove.map(a => a.id), newStage)
+    clearSelection()
+
     const reaction = await fetchAIReaction('reaction', app.company, app.role, newStage)
     setToast(reaction)
   }
@@ -147,6 +191,23 @@ export default function KanbanBoard() {
       <XPBar stats={stats} />
       <StatsPanel stats={stats} />
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-6 py-2 border-b border-grind-border bg-surface/40 shrink-0">
+          <span className="text-xs text-gold font-mono">
+            {selectedIds.size} selected
+          </span>
+          <span className="text-xs text-muted">
+            Drag any selected card to move them all
+          </span>
+          <button
+            onClick={clearSelection}
+            className="text-xs text-muted hover:text-foreground transition-colors ml-auto"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
           <div className="flex gap-4 min-w-max h-full pb-4">
@@ -155,8 +216,10 @@ export default function KanbanBoard() {
                 key={stage}
                 stage={stage}
                 applications={appsByStage[stage]}
-                onDelete={deleteApplication}
+                onDelete={handleDelete}
                 onSelect={setSelectedApp}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
               />
             ))}
           </div>
@@ -164,8 +227,13 @@ export default function KanbanBoard() {
 
         <DragOverlay>
           {activeApp ? (
-            <div className="rotate-1 shadow-2xl opacity-90">
+            <div className="relative rotate-1 shadow-2xl opacity-90">
               <ApplicationCard application={activeApp} onDelete={() => {}} />
+              {dragCount > 1 && (
+                <div className="absolute -top-2 -right-2 bg-gold text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                  {dragCount}
+                </div>
+              )}
             </div>
           ) : null}
         </DragOverlay>

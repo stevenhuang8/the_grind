@@ -53,10 +53,23 @@ export function useApplications() {
     return data
   }
 
+  async function updateStageBulk(ids: string[], stage: Stage): Promise<void> {
+    const { data, error } = await supabase
+      .from('applications')
+      .update({ stage, xp_awarded: STAGE_XP[stage] })
+      .in('id', ids)
+      .select()
+
+    if (error || !data) return
+    setApplications(prev =>
+      prev.map(a => data.find(d => d.id === a.id) ?? a)
+    )
+  }
+
   async function deleteApplication(id: string): Promise<void> {
     await supabase.from('applications').delete().eq('id', id)
     setApplications(prev => prev.filter(a => a.id !== id))
   }
 
-  return { applications, loading, addApplication, updateStage, deleteApplication }
+  return { applications, loading, addApplication, updateStage, updateStageBulk, deleteApplication }
 }
