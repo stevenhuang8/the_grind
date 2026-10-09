@@ -1,4 +1,4 @@
-import { LEVELS, Level, UserStats, Application, STAGE_XP } from '@/types'
+import { LEVELS, Level, UserStats, Application } from '@/types'
 
 export function getLevelFromXP(xp: number): Level {
   let current = LEVELS[0]

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Application, Stage, STAGE_XP } from '@/types'
 
@@ -8,18 +8,19 @@ export function useApplications() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchApplications = useCallback(async () => {
-    const { data } = await supabase
+  useEffect(() => {
+    let cancelled = false
+    supabase
       .from('applications')
       .select('*')
       .order('created_at', { ascending: false })
-    setApplications(data ?? [])
-    setLoading(false)
+      .then(({ data }) => {
+        if (cancelled) return
+        setApplications(data ?? [])
+        setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [])
-
-  useEffect(() => {
-    fetchApplications()
-  }, [fetchApplications])
 
   async function addApplication(input: NewApplication): Promise<Application | null> {
     const { data: { user } } = await supabase.auth.getUser()

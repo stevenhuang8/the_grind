@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: CORS })
   }
 
-  const { url, pageText } = await req.json()
+  const { pageText } = await req.json()
 
   const prompt = `Extract the job posting details from the content below.
 

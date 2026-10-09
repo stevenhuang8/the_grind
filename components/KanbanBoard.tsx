@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DndContext,
   DragEndEvent,
@@ -53,6 +54,7 @@ async function fetchAIReaction(
 }
 
 export default function KanbanBoard() {
+  const router = useRouter()
   const { applications, loading, addApplication, updateStageBulk, deleteApplication } =
     useApplications()
   const stats = useXP(applications)
@@ -147,7 +149,7 @@ export default function KanbanBoard() {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    router.replace('/login')
   }
 
   const appsByStage = STAGE_ORDER.reduce<Record<Stage, Application[]>>(
