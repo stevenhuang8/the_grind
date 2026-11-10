@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { isDemoSession } from '@/lib/demo'
 import { Application, Stage, STAGE_XP } from '@/types'
 
 type NewApplication = Omit<Application, 'id' | 'user_id' | 'xp_awarded' | 'created_at' | 'updated_at'>
@@ -22,9 +23,27 @@ export function useApplications() {
     return () => { cancelled = true }
   }, [])
 
+  function withStage(app: Application, stage: Stage): Application {
+    return { ...app, stage, xp_awarded: STAGE_XP[stage], updated_at: new Date().toISOString() }
+  }
+
   async function addApplication(input: NewApplication): Promise<Application | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
+
+    if (await isDemoSession()) {
+      const now = new Date().toISOString()
+      const local: Application = {
+        ...input,
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        xp_awarded: STAGE_XP[input.stage],
+        created_at: now,
+        updated_at: now,
+      }
+      setApplications(prev => [local, ...prev])
+      return local
+    }
 
     const { data, error } = await supabase
       .from('applications')
@@ -42,6 +61,14 @@ export function useApplications() {
   }
 
   async function updateStage(id: string, stage: Stage): Promise<Application | null> {
+    if (await isDemoSession()) {
+      const current = applications.find(a => a.id === id)
+      if (!current) return null
+      const local = withStage(current, stage)
+      setApplications(prev => prev.map(a => a.id === id ? local : a))
+      return local
+    }
+
     const { data, error } = await supabase
       .from('applications')
       .update({ stage, xp_awarded: STAGE_XP[stage] })
@@ -55,6 +82,11 @@ export function useApplications() {
   }
 
   async function updateStageBulk(ids: string[], stage: Stage): Promise<void> {
+    if (await isDemoSession()) {
+      setApplications(prev => prev.map(a => ids.includes(a.id) ? withStage(a, stage) : a))
+      return
+    }
+
     const { data, error } = await supabase
       .from('applications')
       .update({ stage, xp_awarded: STAGE_XP[stage] })
@@ -68,7 +100,9 @@ export function useApplications() {
   }
 
   async function deleteApplication(id: string): Promise<void> {
-    await supabase.from('applications').delete().eq('id', id)
+    if (!(await isDemoSession())) {
+      await supabase.from('applications').delete().eq('id', id)
+    }
     setApplications(prev => prev.filter(a => a.id !== id))
   }
 

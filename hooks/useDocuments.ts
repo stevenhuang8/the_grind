@@ -2,9 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { isDemoSession } from '@/lib/demo'
 import { JobDocument } from '@/types'
 
 export type DocumentWithUrl = JobDocument & { signedUrl?: string }
+
+const DEMO_DOCUMENTS_ERROR = 'Documents are disabled in the demo.'
 
 export function useDocuments(applicationId: string) {
   const [documents, setDocuments] = useState<DocumentWithUrl[]>([])
@@ -41,6 +44,12 @@ export function useDocuments(applicationId: string) {
   async function uploadDocument(file: File) {
     setUploading(true)
     setError(null)
+
+    if (await isDemoSession()) {
+      setError(DEMO_DOCUMENTS_ERROR)
+      setUploading(false)
+      return
+    }
 
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) {
@@ -81,6 +90,11 @@ export function useDocuments(applicationId: string) {
   }
 
   async function deleteDocument(doc: JobDocument) {
+    if (await isDemoSession()) {
+      setError(DEMO_DOCUMENTS_ERROR)
+      return
+    }
+
     await supabase.storage.from('application-documents').remove([doc.storage_path])
     await supabase.from('documents').delete().eq('id', doc.id)
     setDocuments(prev => prev.filter(d => d.id !== doc.id))

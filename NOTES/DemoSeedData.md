@@ -22,10 +22,9 @@ applications so the board has something to look at and drag around.
    computes it for real inserts.
 4. Logs a per-stage count summary.
 
-No `SUPABASE_SERVICE_ROLE_KEY` is needed — the `applications` insert/delete RLS policies
-already allow a signed-in user to manage their own rows
-(`with check (auth.uid() = user_id)` in `supabase/schema.sql`), and the script just signs
-in as that user like any other client.
+`SUPABASE_SERVICE_ROLE_KEY` is required. `supabase/demo-lock.sql` makes the demo account
+read-only, so the script signs in only to look up the user ID and writes with the service
+role, which bypasses RLS. Keep this key in `.env.local` only. Never add it to Vercel.
 
 ## How to run it
 
@@ -34,7 +33,7 @@ npm run seed:demo
 ```
 
 Requires `.env.local` to have `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-`DEMO_EMAIL`, and `DEMO_PASSWORD` set, and the demo user to already exist in Supabase Auth
+`SUPABASE_SERVICE_ROLE_KEY`, `DEMO_EMAIL`, and `DEMO_PASSWORD` set, and the demo user to already exist in Supabase Auth
 (Dashboard → Authentication → Users — see `NOTES/RecruiterDemoLogin.md`'s setup steps).
 The script exits with a clear error if sign-in fails.
 

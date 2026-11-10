@@ -33,6 +33,7 @@ const SEED_APPLICATIONS: SeedApplication[] = [
 function main() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const email = process.env.DEMO_EMAIL
   const password = process.env.DEMO_PASSWORD
 
@@ -40,18 +41,27 @@ function main() {
     console.error('Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
     process.exit(1)
   }
+  if (!serviceRoleKey) {
+    console.error('Missing SUPABASE_SERVICE_ROLE_KEY in .env.local (the demo account is read-only, see supabase/demo-lock.sql)')
+    process.exit(1)
+  }
   if (!email || !password) {
     console.error('Missing DEMO_EMAIL / DEMO_PASSWORD in .env.local')
     process.exit(1)
   }
 
-  return run(supabaseUrl, supabaseAnonKey, email, password)
+  return run(supabaseUrl, supabaseAnonKey, serviceRoleKey, email, password)
 }
 
-async function run(supabaseUrl: string, supabaseAnonKey: string, email: string, password: string) {
-  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+async function run(supabaseUrl: string, supabaseAnonKey: string, serviceRoleKey: string, email: string, password: string) {
+  // Separate clients: signing in on the admin client would replace its service
+  // role credentials with the demo user's token, and RLS would block the writes.
+  const authClient = createClient(supabaseUrl, supabaseAnonKey)
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+  const { data: authData, error: authError } = await authClient.auth.signInWithPassword({ email, password })
   if (authError || !authData.user) {
     console.error(
       `Demo sign-in failed: ${authError?.message ?? 'unknown error'}\n` +
