@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getRequestUser } from '@/lib/api-auth'
+import { isRateLimited } from '@/lib/rate-limit'
+
+// The extension sends up to 12,000 characters of page text plus the title and URL.
+const MAX_PAGE_TEXT_LENGTH = 15_000
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -12,22 +16,20 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) {
+  const user = await getRequestUser(req)
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: CORS })
   }
 
-  // Fresh client per request to avoid session bleed
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: CORS })
+  if (isRateLimited(`capture:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: CORS })
   }
 
-  const { pageText } = await req.json()
+  const body = await req.json().catch(() => null)
+  if (typeof body?.pageText !== 'string') {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400, headers: CORS })
+  }
+  const pageText = body.pageText.slice(0, MAX_PAGE_TEXT_LENGTH)
 
   const prompt = `Extract the job posting details from the content below.
 

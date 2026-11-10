@@ -40,9 +40,15 @@ async function fetchAIReaction(
   stage: Stage
 ): Promise<string> {
   try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return 'Keep grinding.'
+
     const res = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ type, company, role, stage }),
     })
     if (!res.ok) return 'Keep grinding.'

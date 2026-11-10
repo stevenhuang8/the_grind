@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Stage } from '@/types'
+import { getRequestUser } from '@/lib/api-auth'
+import { isRateLimited } from '@/lib/rate-limit'
+
+const MAX_FIELD_LENGTH = 200
+
+function clean(value: unknown): string {
+  return String(value ?? '').slice(0, MAX_FIELD_LENGTH)
+}
 
 const REACTION_PROMPTS: Record<Stage, string> = {
   applied: 'The user just applied to {company} for a {role} position. Give them a short, hype 1-2 sentence reaction. Tone: confident, like a coach before a game. No cringe.',
@@ -12,7 +20,23 @@ const REACTION_PROMPTS: Record<Stage, string> = {
 }
 
 export async function POST(req: NextRequest) {
-  const { type, company, role, stage, stats } = await req.json()
+  const user = await getRequestUser(req)
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (isRateLimited(`ai:${user.id}`, 20, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
+  const body = await req.json().catch(() => null)
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+
+  const { type, stage, stats } = body
+  const company = clean(body.company)
+  const role = clean(body.role)
 
   let prompt = ''
 
@@ -24,7 +48,9 @@ export async function POST(req: NextRequest) {
   } else if (type === 'roast') {
     prompt = `Roast ${company} for ghosting/rejecting a candidate applying for ${role}. Be savage but keep it professional and witty. 2-3 sentences max. No asterisks or formatting.`
   } else if (type === 'recap') {
-    prompt = `Write a weekly job search recap for someone who: applied to ${stats?.totalApplications ?? 0} jobs total, has a ${stats?.responseRate ?? 0}% response rate, and is level ${stats?.level ?? 1} "${stats?.title ?? 'Rookie'}". Keep it under 4 sentences, personal, motivating but real. Sign off with something punchy.`
+    prompt = `Write a weekly job search recap for someone who: applied to ${Number(stats?.totalApplications) || 0} jobs total, has a ${Number(stats?.responseRate) || 0}% response rate, and is level ${Number(stats?.level) || 1} "${clean(stats?.title) || 'Rookie'}". Keep it under 4 sentences, personal, motivating but real. Sign off with something punchy.`
+  } else {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
